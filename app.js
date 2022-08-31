@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const date = require(`${__dirname}/date.js`)
+const mongoose = require ("mongoose");
 
 const app = express();
 
@@ -8,26 +8,57 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"))
 app.set("view engine", "ejs")
 
-const items = ["Buy Food", "Cook Food", "Eat Food"];
-const workItems = [];
+mongoose.connect("mongodb://localhost/todolistDB");
+
+const itemSchema = new mongoose.Schema({
+    name: String
+});
+
+const Item= mongoose.model("Item", itemSchema);
+const item1 = new Item({
+    name: "welcome to your todo list",
+});
+const item2 = new Item({
+    name: "click this button to +add item to list",
+});
+const item3 = new Item({
+    name: "--> click this button to delete item",
+});
+
+const defaultItem = [item1, item2, item3];
+
+
+
 app.get("/", (req, res)=>{
-    let day = date.getDate()
-    
-    res.render("list",{ listTitle: day , newListItems: items })
+    Item.find({}, (err, foundItems)=>{
+        if (foundItems === 0) {
+            Item.insertMany(defaultItem, (err)=>{if(err){
+                console.log(err)
+               }else{
+                console.log("item was altered")
+               }
+            });
+            res.redirect("/");
+        }else{
+            res.render("list",{ listTitle: "Today" , newListItems: foundItems })
+        }
+    })
+   
 });
 
 app.post("/", (req, res)=>{
+    let itemName= req.body.newItem;
 
-    let item= req.body.newItem;
+    const item = new Item({
+        name: itemName
+    });
 
-    if(req.body.list === "Work"){
-        workItems.push(item)
-        res.redirect("/work")
-    }else{
-        items.push(item);
-        res.redirect("/");
-    }
-    
+    item.save();
+    res.redirect("/")
+});
+
+app.post("/delete", (req, res)=>{
+    console.log(req.body.checkbox)
 })
 
 app.get("/work", (req,res)=>{
