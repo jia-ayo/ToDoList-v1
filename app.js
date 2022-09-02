@@ -46,60 +46,93 @@ app.get("/", (req, res)=>{
             });
             res.redirect("/");
         }else{
-            res.render("list",{ listTitle: "Today" , newListItems: foundItems })
+            res.render("list",{ listTitle: "Today" , items: foundItems })
         }
     })
    
 });
 
-app.get("/:customListName", (req,res)=>{
-    const customListName= req.params.customListName;
-    
-
+app.get("/:customListName",  (req, res)=>{
+    const customListName = req.params.customListName;
     List.findOne({name: customListName}, (err, foundList)=>{
         if(!err){
             if(!foundList){
-                //create new list
+                //CREATE NEW LIST
                 const list = new List({
                     name: customListName,
                     items: defaultItem
                 });
-            
                 list.save();
-                res.redirect(`/${customListName}`);
-            }else{ 
-               //show existing list
-               res.render("list",{listTitle: foundList.name, newListItems: foundList.items})
+                res.redirect(`/${customListName}`)
+            }else{
+                //SHOW EXISTING LIST
+                res.render("list", {listTitle: foundList.name, items: foundList.items})
             }
         }
-    })
+    });
+})
 
 
-});
+// app.get("/:customListName", (req,res)=>{
+//     const customListName= req.params.customListName;
+//     List.findOne({name: customListName}, (err, foundList)=>{
+//         if(!err){
+//             if(!foundList){
+//                 //create new list
+//                 const list = new List({
+//                     name: customListName,
+//                     items: defaultItem
+//                 });
+//                 list.save();
+//                 res.redirect(`/${customListName}`);
+//             }else{ 
+//                //show existing list
+//                res.render("list", {listTitle: foundList.name, items: foundList.items})
+//             }
+//         }
+//     })
+// });
 
 app.post("/", (req, res)=>{
-    let itemName= req.body.newItem;
+    const itemName= req.body.newItem;
+    const listName = req.body.list;
 
     const item = new Item({
         name: itemName
     });
 
-    item.save();
-    res.redirect("/")
+    if(listName === "Today"){
+        item.save();
+        res.redirect("/"); 
+    }else{
+        List.findOne({name: listName}, (err, foundList)=>{
+            foundList.items.push(item);
+            foundList.save();
+            res.redirect(`/${listName}`)
+        });
+    }
 });
 
 app.post("/delete", (req, res)=>{
     const checkedItem = req.body.checkbox;
-    const listName =req.body.listName;
+    const listName = req.body.listName;
+    
 
-    if(listName === checkedItem){
+    if(listName === "Today"){
         Item.findByIdAndRemove(checkedItem, (err)=>{
-            if(!err){console.log('Succefully removed')}
-        });
-        res.redirect("/");
+            if(!err){
+                console.log('Succefully removed');
+                res.redirect("/");
+            }
+        }); 
+    }else{
+        List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: checkedItem}}}, (err,foundList)=>{
+            if(!err){
+                res.redirect(`/${listName}`)
+            }
+        })
     }
-
-})
+});
 
 
 app.get("/about", (req, res)=>{
