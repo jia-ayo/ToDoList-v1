@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require ("mongoose");
+const _ = require("lodash");
 
 const app = express();
 
@@ -53,7 +54,7 @@ app.get("/", (req, res)=>{
 });
 
 app.get("/:customListName",  (req, res)=>{
-    const customListName = req.params.customListName;
+    const customListName = _.capitalize(req.params.customListName);
     List.findOne({name: customListName}, (err, foundList)=>{
         if(!err){
             if(!foundList){
@@ -71,27 +72,6 @@ app.get("/:customListName",  (req, res)=>{
         }
     });
 })
-
-
-// app.get("/:customListName", (req,res)=>{
-//     const customListName= req.params.customListName;
-//     List.findOne({name: customListName}, (err, foundList)=>{
-//         if(!err){
-//             if(!foundList){
-//                 //create new list
-//                 const list = new List({
-//                     name: customListName,
-//                     items: defaultItem
-//                 });
-//                 list.save();
-//                 res.redirect(`/${customListName}`);
-//             }else{ 
-//                //show existing list
-//                res.render("list", {listTitle: foundList.name, items: foundList.items})
-//             }
-//         }
-//     })
-// });
 
 app.post("/", (req, res)=>{
     const itemName= req.body.newItem;
